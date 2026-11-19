@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>絲路旅人</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; height: 100dvh; overflow: hidden;
+            overscroll-behavior: none;
+            font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', 'Segoe UI', sans-serif; 
+            color: #1b3a4b;
+            position: fixed; inset: 0;
+            background-color: #e7c99a;
+            background-image:
+                linear-gradient(180deg, rgba(255, 248, 234, 0.9), rgba(231, 201, 154, 0.82)),
+                url("絲綢之路.jpeg");
+            background-size: cover;
+            background-position: center;
+        }
+
+        button, .color-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+        .app-container { display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: 15px; gap: 20px; }
+
+        .left-panel {
+            flex: 0 0 360px; display: flex; flex-direction: column; gap: 12px; height: 100%; min-height: 0;
+            padding: 4px 4px 8px; box-sizing: border-box;
+            overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+        }
+        .left-panel, .left-panel * { box-sizing: border-box; }
+        .left-panel > * { width: 100%; max-width: 100%; min-width: 0; }
+        .left-panel input[type="range"] { touch-action: pan-x; }
+
+        .right-panel {
+            flex: 1; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center;
+            padding: 10px; container-type: size;
+        }
+
+        h1 { color: #7a2e12; margin: 0 0 5px 0; text-align: center; font-size: 28px; text-shadow: 2px 2px 0 #fff8ea; }
+        
+        #status-bar {
+            font-size: 18px; font-weight: bold; background: #fff8ea; padding: 15px; border-radius: 18px; 
+            text-align: center; border: 4px solid #c6a15b; box-shadow: 0 0 0 3px #1b3a4b; color: #1b3a4b;
+        }
+        .instructions { font-size: 15px; color: #7a2e12; margin-top: 8px; font-weight: normal; line-height: 1.4; }
+
+        .top-toolbar { display: flex; flex-direction: column; gap: 10px; }
+        .main-btn {
+            padding: 15px 20px; font-size: 20px; font-weight: bold; cursor: pointer; border: none; border-radius: 15px; 
+            color: #fff8ea; background-color: #0e6b5c; transition: all 0.1s; box-shadow: 0 6px 0 #08483e; width: 100%; max-width: 100%;
+        }
+        .main-btn:active { transform: translateY(6px); box-shadow: 0 0 0 #08483e; }
+        .main-btn.danger { background-color: #b5522a; box-shadow: 0 6px 0 #7a3018; font-size: 16px; padding: 10px;}
+        .main-btn.danger:active { box-shadow: 0 0 0 #7a3018; }
+        .main-btn.purple { background-color: #243e73; box-shadow: 0 6px 0 #15284d; font-size: 22px;}
+        .main-btn.purple:active { box-shadow: 0 0 0 #15284d; }
+
+        .tools-panel { 
+            background: #fff8ea; padding: 15px; border-radius: 18px; border: 3px solid #c6a15b;
+            box-shadow: 0 0 0 3px #1b3a4b; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+        }
+        
+        .tool-btn { 
+            font-size: 16px; font-weight: bold; padding: 10px; border-radius: 12px; border: 2px solid #ccc; 
+            background: #fff; cursor: pointer; transition: 0.2s; flex: 1 1 30%; text-align: center;
+            min-height: 44px; font-family: inherit;
+        }
+        .tool-btn.active { background: #e2b657 !important; color: #1b3a4b !important; border-color: #1b3a4b; box-shadow: 0 4px 0 #1b3a4b; transform: translateY(-2px); }
+        .tool-btn:active { transform: translateY(2px); box-shadow: none; }
+        .tool-btn:disabled { opacity: 0.45; }
+
+        .size-control { width: 100%; display: flex; align-items: center; background: #f3e2c0; padding: 8px; border-radius: 10px; box-sizing: border-box; justify-content: space-between; min-height: 44px; }
+        .size-control input { flex: 1; margin: 0 10px; height: 28px; }
+
+        .color-palette { width: 100%; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding-top: 10px; border-top: 2px dashed #c6a15b; }
+        .color-btn { width: 44px; height: 44px; border-radius: 50%; border: 3px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer; }
+        .color-btn.selected { border: 4px solid #333; transform: scale(1.15); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+
+        #assemble-tools { display: none; background: #fff4d8; border-color: #c6a15b; flex-direction: column; }
+        .scale-slider { width: 100%; height: 32px; }
+
+        #motion-tools {
+            display: none; flex-flow: column nowrap; align-items: stretch; justify-content: flex-start;
+            background: #fff8ea; border-color: #243e73;
+            flex: 1 1 auto; min-height: 0; width: 100%; max-width: 100%; min-width: 0; overflow: hidden;
+        }
+        #motion-list { flex: 1 1 auto; min-height: 0; width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        .motion-group { flex: 1 1 auto; min-height: 0; width: 100%; min-width: 0; display: flex; flex-direction: column; }
+        .motion-group-title { flex: 0 0 auto; font-size: 14px; font-weight: bold; color: #243e73; margin: 2px 0; }
+        .motion-grid {
+            flex: 1 1 auto; min-height: 0; width: 100%;
+            display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px;
+        }
+        .motion-btn {
+            width: 100%; min-width: 0; max-width: 100%; height: 100%; min-height: 0; flex: none;
+            white-space: normal; overflow-wrap: anywhere; line-height: 1.15;
+        }
+        .motion-btn.active { transform: none; box-shadow: inset 0 0 0 3px #1b3a4b; }
+        .back-btn { flex: 0 0 auto; align-self: stretch; width: 100%; max-width: 100%; }
+
+        .canvas-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .canvas-wrapper { 
+            position: relative; aspect-ratio: 4 / 3; width: 100%;
+            width: min(100cqw, calc(100cqh * 4 / 3));
+            max-height: 100%;
+            background-color: #fff8ea; border-radius: 18px; border: 4px solid #1b3a4b;
+            box-shadow: 0 0 0 4px #c6a15b; touch-action: none; overflow: hidden;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+        }
+        
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+        
+        #bgGridCanvas { z-index: 0; pointer-events: none; }
+        #referenceCanvas { z-index: 1; pointer-events: none; }
+        #headCanvas { z-index: 2; pointer-events: none; }
+        #mainCanvas { z-index: 3; }
+        #previewCanvas { z-index: 4; cursor: crosshair; }
+
+        #item-badge {
+            display: none; background: #1b3a4b; color: #fff8ea; border-radius: 14px;
+            padding: 12px 14px; text-align: center; font-weight: bold;
+        }
+
+        .step-modal {
+            position: fixed; inset: 0; z-index: 3000;
+            background: rgba(27, 42, 58, 0.62);
+            display: flex; align-items: center; justify-content: center; padding: 18px;
+        }
+        .step-modal[hidden] { display: none; }
+        .step-card {
+            width: min(520px, 100%);
+            background: #fff8ea;
+            border: 4px solid #1b3a4b;
+            box-shadow: 0 0 0 5px #c6a15b;
+            border-radius: 12px 36px 12px 36px;
+            padding: 22px 22px 18px;
+        }
+        .step-kicker { margin: 0 0 6px; color: #9a6b2f; letter-spacing: 0.14em; font-size: 13px; font-weight: bold; }
+        .step-card h2 { margin: 0 0 10px; color: #7a2e12; font-size: 28px; }
+        .step-card p { margin: 0 0 16px; color: #1b3a4b; font-size: 18px; line-height: 1.45; font-weight: bold; }
+        #goods-panel[hidden], #step-ok[hidden] { display: none; }
+        .goods-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .goods-card {
+            min-height: 132px; border: 3px solid #c6a15b; border-radius: 16px; background: #fff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+            font-family: inherit; font-weight: bold; color: #1b3a4b; cursor: pointer; font-size: 18px;
+        }
+        .goods-card svg { width: 74px; height: 74px; }
+        .goods-card small { font-weight: normal; color: #7a2e12; font-size: 14px; }
+        .goods-card:active { transform: translateY(2px); }
+
+        .camera-layer {
+            position: absolute; inset: 0; z-index: 6; background: #1b2430;
+        }
+        .camera-layer[hidden] { display: none; }
+        .camera-layer video, #camera-still {
+            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #1b2430;
+        }
+        #camera-video { transform: scaleX(-1); }
+        #camera-still[hidden], #camera-video[hidden] { display: none !important; }
+        .camera-oval {
+            position: absolute; left: 50%; top: 38%; width: 46%; aspect-ratio: 1;
+            transform: translate(-50%, -50%); border-radius: 50%;
+            border: 4px solid #e2b657; box-shadow: 0 0 0 2000px rgba(12, 20, 28, 0.45);
+            pointer-events: none;
+        }
+        .camera-actions {
+            position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        #camera-hint { margin: 0; color: #fff8ea; text-align: center; font-weight: bold; text-shadow: 0 1px 2px #000; } 
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; overflow: hidden; padding: 8px; gap: 8px; }
+            .right-panel { order: -1; flex: 1 1 auto; width: 100%; padding: 0; }
+            .left-panel { flex: 0 1 auto; width: 100%; max-height: 48%; height: auto; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+            h1 { font-size: 22px; }
+            #status-bar { padding: 10px; font-size: 16px; }
+            .main-btn, .main-btn.purple { font-size: 18px; padding: 12px; }
+            #motion-tools, #motion-list { flex: 0 0 auto; min-height: auto; overflow: visible; }
+            .motion-btn { height: auto; min-height: 44px; }
+        }
+
+        @media (max-height: 860px) {
+            .left-panel { gap: 8px; }
+            h1 { font-size: 22px; margin: 0; }
+            #status-bar { padding: 8px 10px; font-size: 16px; }
+            .instructions { font-size: 13px; margin-top: 4px; }
+            .tools-panel { padding: 10px; gap: 6px; }
+            .tool-btn { min-height: 36px; padding: 6px; font-size: 15px; }
+            .motion-btn { min-height: 0; height: 100%; }
+            .motion-group-title { margin: 0; }
+            .motion-grid { gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="left-panel">
+            <h1>絲路旅人</h1>
+            
+            <div id="status-bar">
+                <div id="status-title">歡迎來到絲綢之路</div>
+                <div id="status-desc" class="instructions">先聽說明，再選一樣要帶去市集的東西。</div>
+            </div>
+
+            <div id="item-badge"></div>
+
+            <div class="top-toolbar">
+                <button id="btnNext" class="main-btn" onclick="requestSlice()" style="display:none;">畫好了，準備上路</button>
+                <button id="btnAnimate" class="main-btn" onclick="requestAnimate()" style="display:none;">選一個動作</button>
+                <button id="btnExportGIF" class="main-btn purple" onclick="requestExport()" style="display:none;">送到絲路市集</button>
+            </div>
+
+            <div id="drawing-tools" class="tools-panel" style="display:none;">
+                <button id="pen" class="tool-btn active">✏️ 畫筆</button>
+                <button id="fill" class="tool-btn">🪣 倒色</button>
+                <button id="eraser" class="tool-btn">🧽 擦膠</button>
+                <button id="undo" class="tool-btn">↩️ 倒退</button>
+                <button id="clear" class="tool-btn">🗑️ 全部擦掉</button>
+                
+                <div class="size-control">
+                    <span style="font-weight:bold;">粗細:</span> 
+                    <input type="range" id="size" min="5" max="80" value="15">
+                    <span id="sizeVal" style="display:inline-block; width:30px; font-weight:bold; text-align:right;">15</span>
+                </div>
+                
+                <div class="color-palette">
+                    <input type="color" id="color" value="#000000" style="display:none;"> 
+                    <div class="color-btn selected" data-color="#000000" style="background:#000000"></div>
+                    <div class="color-btn" data-color="#f44336" style="background:#f44336"></div> 
+                    <div class="color-btn" data-color="#ff9800" style="background:#ff9800"></div> 
+                    <div class="color-btn" data-color="#ffeb3b" style="background:#ffeb3b"></div> 
+                    <div class="color-btn" data-color="#4caf50" style="background:#4caf50"></div> 
+                    <div class="color-btn" data-color="#2196f3" style="background:#2196f3"></div> 
+                    <div class="color-btn" data-color="#9c27b0" style="background:#9c27b0"></div> 
+                    <div class="color-btn" data-color="#ffffff" style="background:#ffffff"></div> 
+                </div>
+            </div>
+
+            <div id="assemble-tools" class="tools-panel">
+                <strong style="color: #e65100; font-size: 16px; margin-bottom: 5px;">👇 點選圖片來放大縮小：<span id="selected-part-name" style="color:#000;">尚未選取</span></strong>
+                <input type="range" id="scale-slider" class="scale-slider" min="0.2" max="3" step="0.1" value="1" disabled>
+            </div>
+
+            <div id="motion-tools" class="tools-panel">
+                <div id="motion-list"></div>
+                <button id="btnBackJoints" type="button" class="tool-btn back-btn">回去改關節</button>
+            </div>
+
+            <button type="button" id="btnNewSheet" class="main-btn danger">🔄 換一張紙</button>
+        </div>
+
+        <div class="right-panel">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="bgGridCanvas" width="800" height="600"></canvas>
+                    <canvas id="referenceCanvas" width="800" height="600"></canvas>
+                    <canvas id="headCanvas" width="800" height="600"></canvas>
+                    <canvas id="mainCanvas" width="800" height="600"></canvas>
+                    <canvas id="previewCanvas" width="800" height="600"></canvas>
+                    <div id="camera-layer" class="camera-layer" hidden>
+                        <video id="camera-video" playsinline autoplay muted></video>
+                        <canvas id="camera-still" hidden></canvas>
+                        <div class="camera-oval"></div>
+                        <div class="camera-actions">
+                            <p id="camera-hint">把臉放進金色圓框</p>
+                            <button id="btnShutter" type="button" class="main-btn">拍照</button>
+                            <button id="btnUsePhoto" type="button" class="main-btn" hidden>用這張當頭</button>
+                            <button id="btnRetake" type="button" class="main-btn danger" hidden>重拍</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="step-modal" class="step-modal" hidden>
+        <div class="step-card">
+            <p class="step-kicker" id="step-kicker"></p>
+            <h2 id="step-title"></h2>
+            <p id="step-body"></p>
+            <div id="goods-panel" hidden>
+                <div class="goods-grid">
+                    <button type="button" class="goods-card" data-item="silk">
+                        <svg viewBox="0 0 80 80" aria-hidden="true"><path d="M10 20c10 8 16 1 26 8s16 2 24-6l8 10c-12 10-18 1-28 9S24 46 10 34z" fill="#9b2335"/><path d="M10 36c10 8 16 1 26 8s16 2 24-6l8 10c-12 10-18 1-28 9S24 62 10 50z" fill="#d45d6e"/><path d="M10 52c10 8 16 1 26 8s16 2 24-6l8 10c-12 10-18 1-28 8S24 76 10 66z" fill="#7a1e32"/></svg>
+                        <span>絲綢</span><small>來自東方</small>
+                    </button>
+                    <button type="button" class="goods-card" data-item="paper">
+                        <svg viewBox="0 0 80 80" aria-hidden="true"><rect x="22" y="14" width="36" height="52" rx="3" fill="#f6e7c1" stroke="#8a6232" stroke-width="3"/><path d="M30 28h22M30 38h22M30 48h14" stroke="#1b3a4b" stroke-width="3" stroke-linecap="round"/><rect x="14" y="24" width="10" height="32" rx="5" fill="#e2b657" stroke="#8a6232" stroke-width="2"/><rect x="56" y="24" width="10" height="32" rx="5" fill="#e2b657" stroke="#8a6232" stroke-width="2"/></svg>
+                        <span>紙</span><small>來自東方</small>
+                    </button>
+                    <button type="button" class="goods-card" data-item="spice">
+                        <svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="22" cy="50" rx="14" ry="9" fill="#a34a28"/><ellipse cx="40" cy="46" rx="14" ry="9" fill="#c4922a"/><ellipse cx="58" cy="52" rx="14" ry="9" fill="#6b2d5b"/><ellipse cx="22" cy="46" rx="10" ry="5" fill="#e07a3d"/><ellipse cx="40" cy="42" rx="10" ry="5" fill="#f0c14a"/><ellipse cx="58" cy="48" rx="10" ry="5" fill="#9a4d86"/><circle cx="18" cy="28" r="3" fill="#c45c26"/><circle cx="30" cy="22" r="2" fill="#b8860b"/><circle cx="50" cy="24" r="3" fill="#6b2d5b"/></svg>
+                        <span>香料</span><small>來自西方</small>
+                    </button>
+                    <button type="button" class="goods-card" data-item="glass">
+                        <svg viewBox="0 0 80 80" aria-hidden="true"><path d="M26 16h28l-5 38a14 14 0 0 1-18 0z" fill="#b7e3ee" stroke="#1b3a4b" stroke-width="3"/><path d="M34 22c5 8 5 18 2 30" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M22 60h36" stroke="#1b3a4b" stroke-width="3" stroke-linecap="round"/></svg>
+                        <span>玻璃</span><small>來自西方</small>
+                    </button>
+                </div>
+            </div>
+            <button id="step-ok" type="button" class="main-btn">確定</button>
+        </div>
+    </div>
+    <input id="photoFile" type="file" accept="image/*" capture="user" hidden>
+
+    <script>
+        // ==========================================
+        // 🔑 Firebase 設定
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa5PUoGfTswgqQFChKC0xt-Rv21G9FYuw",
+            authDomain: "character-wall.firebaseapp.com",
+            databaseURL: "https://character-wall-default-rtdb.firebaseio.com",
+            projectId: "character-wall",
+            storageBucket: "character-wall.firebasestorage.app",
+            messagingSenderId: "308216615534",
+            appId: "1:308216615534:web:fed9146e0e4f2303c5cc7f",
+            measurementId: "G-4SV49ZQEB3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // ==========================================
+        // 畫布與變數設定
+        // ==========================================
+        const LOGICAL_W = 800;
+        const LOGICAL_H = 600;
+        const bitmapScale = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const eventLayer = document.getElementById('previewCanvas');
+        const pctx = eventLayer.getContext('2d');
+        const refCanvas = document.getElementById('referenceCanvas');
+        const refCtx = refCanvas.getContext('2d');
+        const bgCanvas = document.getElementById('bgGridCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const headCanvas = document.getElementById('headCanvas');
+        const headCtx = headCanvas.getContext('2d');
+
+        function mountCanvas(target, context) {
+            target.width = Math.round(LOGICAL_W * bitmapScale);
+            target.height = Math.round(LOGICAL_H * bitmapScale);
+            context.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            context.lineCap = 'round';
+            context.lineJoin = 'round';
+            context.imageSmoothingEnabled = true;
+        }
+        function applyMainTransform() {
+            ctx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 1;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+        mountCanvas(canvas, ctx);
+        mountCanvas(eventLayer, pctx);
+        mountCanvas(refCanvas, refCtx);
+        mountCanvas(bgCanvas, bgCtx);
+        mountCanvas(headCanvas, headCtx);
+
+        const titleText = document.getElementById('status-title');
+        const descText = document.getElementById('status-desc');
+        const btnNext = document.getElementById('btnNext');
+        const btnAnimate = document.getElementById('btnAnimate');
+        const btnExportGIF = document.getElementById('btnExportGIF');
+        
+        const toolsDiv = document.getElementById('drawing-tools');
+        const assembleDiv = document.getElementById('assemble-tools');
+        const motionDiv = document.getElementById('motion-tools');
+        const btnBackJoints = document.getElementById('btnBackJoints');
+        const sizeInput = document.getElementById('size');
+        const colorInput = document.getElementById('color');
+        const scaleSlider = document.getElementById('scale-slider');
+        const selectedPartNameTxt = document.getElementById('selected-part-name');
+
+        const HEAD = { id: 'head', name: '頭', x: 320, y: 30, w: 160, h: 160, px: 0.5, py: 0.98 };
+        const REGIONS = {
+            torso: { id: 'torso', name: '身體', x: 340, y: 190, w: 120, h: 180, px: 0.5,  py: 0.5,  color: '#c45c26' }, 
+            lArm:  { id: 'lArm',  name: '右手', x: 150, y: 190, w: 190, h: 80,  px: 0.95, py: 0.5,  color: '#4caf50' }, 
+            rArm:  { id: 'rArm',  name: '左手', x: 460, y: 190, w: 190, h: 80,  px: 0.05, py: 0.5,  color: '#2196f3' }, 
+            lLeg:  { id: 'lLeg',  name: '右腳', x: 340, y: 370, w: 55,  h: 160, px: 0.5,  py: 0.05, color: '#9c27b0' }, 
+            rLeg:  { id: 'rLeg',  name: '左腳', x: 405, y: 370, w: 55,  h: 160, px: 0.5,  py: 0.05, color: '#e91e63' }  
+        };
+        
+        let sysMode = 'draw';
+        let partsData = {};
+        let isDrawing = false;
+        let drawMode = 'pen';
+        const MAX_HISTORY = 15;
+        let history = [];
+        let historyStep = -1;
+        let saveTimer = 0;
+
+        let draggingPart = null;
+        let draggingPivot = null;
+        let selectedPartKey = null; 
+        let dragOffsetX = 0, dragOffsetY = 0;
+        let animationId = 0;
+        let previewPending = false;
+        let activePointerId = null;
+        let penLast = null;
+        let penMid = null;
+
+        let selectedMotionId = 'walk';
+        let motionStart = 0;
+        let poseRootX = LOGICAL_W * 0.5;
+        let poseRootY = LOGICAL_H * 0.58;
+        let hasSent = false;
+        let exporting = false;
+        let sessionId = 0;
+        let carriedItem = '';
+        let headImage = null;
+        let pendingHead = null;
+        let cameraStream = null;
+        let stepAction = null;
+
+        const GOODS = {
+            silk:  { name: '絲綢', from: '東方', direction: 'east' },
+            paper: { name: '紙', from: '東方', direction: 'east' },
+            spice: { name: '香料', from: '西方', direction: 'west' },
+            glass: { name: '玻璃', from: '西方', direction: 'west' }
+        };
+        const STEP_COPY = {
+            intro: {
+                kicker: '絲綢之路',
+                title: '你也來當旅人',
+                body: '絲綢之路不是一條馬路，而是很多人把東西和做法，從東方送到西方，也從西方送回來。先選你要帶去市集的一樣東西。',
+                ok: '我知道了，去選擇'
+            },
+            introNext: {
+                kicker: '下一位旅人',
+                title: '上一位已經上路',
+                body: '他已經出現在大電視的市集。換你來：先選一樣要帶去的東西。絲綢和紙來自東方，香料和玻璃來自西方。',
+                ok: '我知道了，去選擇'
+            },
+            photo: {
+                kicker: '第 2 步',
+                title: '拍下你的頭',
+                body: '旅人的頭就是你。把臉放進金色圓框再拍照。頭部不用畫，拍好之後才畫身體。',
+                ok: '開始拍照'
+            },
+            draw: {
+                kicker: '第 3 步',
+                title: '畫身體',
+                body: '金色圓框裡的照片已經放在頭上。多餘的背景可以用擦膠擦掉，再畫身體、雙手和雙腳。',
+                ok: '開始畫'
+            },
+            assemble: {
+                kicker: '第 4 步',
+                title: '拼好這位旅人',
+                body: '如果手腳怪怪的，可以拖拉紅色靶心改關節，也可以放大縮小。改好再讓他上路。',
+                ok: '去拼一拼'
+            },
+            motion: {
+                kicker: '第 5 步',
+                title: '選一個上路的動作',
+                body: '可以跟著商隊走、趕路，或向市集揮手。大電視上會播出你選的這個動作。',
+                ok: '選動作'
+            },
+            send: {
+                kicker: '第 6 步',
+                title: '送到絲路市集',
+                body: '你的旅人會出現在大電視上，跟其他人帶來的東西在同一條路上相遇。',
+                ok: '送到電視'
+            }
+        };
+
+        const DOWN_L = -Math.PI * 0.45;
+        const DOWN_R = Math.PI * 0.45;
+        const UP_L = Math.PI * 0.42;
+        const UP_R = -Math.PI * 0.42;
+
+        function smoothstep(t) {
+            const x = Math.min(1, Math.max(0, t));
+            return x * x * (3 - 2 * x);
+        }
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function sampleChannel(keys, p, field) {
+            let i = 0;
+            while (i < keys.length - 2 && p >= keys[i + 1].p) i++;
+            const a = keys[i];
+            const b = keys[i + 1];
+            const t = smoothstep((p - a.p) / Math.max(0.0001, b.p - a.p));
+            return lerp(a[field], b[field], t);
+        }
+
+        const MOTIONS = {
+            walk: {
+                group: '上路', name: '跟著商隊走', duration: 1.2,
+                sample(p) {
+                    const swing = Math.sin(p * Math.PI * 2) * 0.55;
+                    const bounce = Math.abs(Math.sin(p * Math.PI * 4)) * 12;
+                    return {
+                        rootY: -bounce,
+                        angles: {
+                            lArm: DOWN_L - swing, rArm: DOWN_R + swing,
+                            lLeg: swing * 0.9, rLeg: -swing * 0.9,
+                            head: Math.sin(p * Math.PI * 4) * 0.05,
+                            torso: Math.sin(p * Math.PI * 2) * 0.05
+                        }
+                    };
+                }
+            },
+            run: {
+                group: '上路', name: '趕路', duration: 0.65,
+                sample(p) {
+                    const swing = Math.sin(p * Math.PI * 2) * 0.95;
+                    const bounce = Math.abs(Math.sin(p * Math.PI * 4)) * 22;
+                    return {
+                        rootY: -bounce,
+                        rootAngle: 0.1,
+                        angles: {
+                            lArm: DOWN_L - swing, rArm: DOWN_R + swing,
+                            lLeg: swing, rLeg: -swing,
+                            head: -0.08,
+                            torso: 0.08 + Math.sin(p * Math.PI * 2) * 0.05
+                        }
+                    };
+                }
+            },
+            zombie: {
+                group: '上路', name: '捧著貨物', duration: 1.6,
+                sample(p) {
+                    const swing = Math.sin(p * Math.PI * 2) * 0.22;
+                    const bob = Math.sin(p * Math.PI * 2) * 0.12;
+                    return {
+                        rootY: -Math.abs(Math.sin(p * Math.PI * 4)) * 6,
+                        angles: {
+                            lArm: 0.75 + bob, rArm: -0.75 - bob,
+                            lLeg: swing, rLeg: -swing,
+                            head: 0.14, torso: 0.06
+                        }
+                    };
+                }
+            },
+            jump: {
+                group: '到達市集', name: '高興地跳', duration: 1.15,
+                sample(p) {
+                    const keys = [
+                        { p: 0, y: 0, sy: 1, sx: 1, arm: 0, leg: 0 },
+                        { p: 0.2, y: 16, sy: 0.8, sx: 1.12, arm: 0.15, leg: 0.18 },
+                        { p: 0.48, y: -78, sy: 1.08, sx: 0.92, arm: 1, leg: -0.08 },
+                        { p: 0.72, y: -18, sy: 1.02, sx: 0.98, arm: 0.65, leg: 0.04 },
+                        { p: 0.86, y: 14, sy: 0.76, sx: 1.16, arm: 0.05, leg: 0.12 },
+                        { p: 1, y: 0, sy: 1, sx: 1, arm: 0, leg: 0 }
+                    ];
+                    const arm = sampleChannel(keys, p, 'arm');
+                    const leg = sampleChannel(keys, p, 'leg');
+                    return {
+                        rootY: sampleChannel(keys, p, 'y'),
+                        squashX: sampleChannel(keys, p, 'sx'),
+                        squashY: sampleChannel(keys, p, 'sy'),
+                        angles: {
+                            lArm: lerp(DOWN_L, UP_L, arm), rArm: lerp(DOWN_R, UP_R, arm),
+                            lLeg: leg, rLeg: -leg, head: -0.06 * arm, torso: 0
+                        }
+                    };
+                }
+            },
+            jacks: {
+                group: '到達市集', name: '市集上跳舞', duration: 1.2,
+                sample(p) {
+                    const open = 0.5 - 0.5 * Math.cos(p * Math.PI * 2);
+                    const hop = Math.abs(Math.sin(p * Math.PI * 2));
+                    return {
+                        rootY: -46 * hop,
+                        squashY: 1 + 0.05 * hop,
+                        angles: {
+                            lArm: lerp(DOWN_L, UP_L, open), rArm: lerp(DOWN_R, UP_R, open),
+                            lLeg: 0.55 * open, rLeg: -0.55 * open,
+                            head: 0, torso: 0
+                        }
+                    };
+                }
+            },
+            wave: {
+                group: '打招呼', name: '向市集揮手', duration: 1.4,
+                sample(p) {
+                    const wave = Math.sin(p * Math.PI * 4) * 0.45;
+                    return {
+                        rootY: -Math.abs(Math.sin(p * Math.PI * 2)) * 4,
+                        angles: {
+                            lArm: DOWN_L, rArm: UP_R + wave,
+                            lLeg: 0.04, rLeg: -0.04,
+                            head: Math.sin(p * Math.PI * 2) * 0.08, torso: 0.03
+                        }
+                    };
+                }
+            },
+            twist: {
+                group: '打招呼', name: '扭一扭', duration: 1.3,
+                sample(p) {
+                    const s = Math.sin(p * Math.PI * 2);
+                    return {
+                        rootY: -Math.abs(s) * 8,
+                        angles: {
+                            lArm: DOWN_L + s * 0.5, rArm: DOWN_R + s * 0.5,
+                            lLeg: s * 0.2, rLeg: s * 0.2,
+                            head: s * 0.25, torso: s * 0.28
+                        }
+                    };
+                }
+            },
+            spin: {
+                group: '好玩的', name: '轉個圈', duration: 1.6,
+                sample(p) {
+                    return {
+                        rootAngle: p * Math.PI * 2,
+                        rootY: -Math.abs(Math.sin(p * Math.PI * 2)) * 8,
+                        angles: {
+                            lArm: DOWN_L + 0.35, rArm: DOWN_R - 0.35,
+                            lLeg: 0.12, rLeg: -0.12, head: 0.04, torso: 0
+                        }
+                    };
+                }
+            },
+            jelly: {
+                group: '好玩的', name: '搖一搖', duration: 1.1,
+                sample(p) {
+                    const s = Math.sin(p * Math.PI * 2);
+                    return {
+                        squashX: 1 + s * 0.14,
+                        squashY: 1 - s * 0.14,
+                        rootY: Math.max(0, -s) * -8,
+                        angles: {
+                            lArm: DOWN_L + s * 0.25, rArm: DOWN_R - s * 0.25,
+                            lLeg: s * 0.1, rLeg: -s * 0.1,
+                            head: -s * 0.1, torso: 0
+                        }
+                    };
+                }
+            },
+            fall: {
+                group: '好玩的', name: '歇一歇再上路', duration: 2.2,
+                sample(p) {
+                    let k;
+                    if (p < 0.4) k = smoothstep(p / 0.4);
+                    else if (p < 0.62) k = 1;
+                    else k = 1 - smoothstep((p - 0.62) / 0.38);
+                    return {
+                        rootAngle: k * 1.2,
+                        rootX: k * 36,
+                        rootY: k * 64,
+                        angles: {
+                            lArm: lerp(DOWN_L, -1.15, k), rArm: lerp(DOWN_R, 1.15, k),
+                            lLeg: lerp(0, 0.35, k), rLeg: lerp(0, -0.15, k),
+                            head: lerp(0, 0.25, k), torso: 0
+                        }
+                    };
+                }
+            }
+        };
+        const MOTION_ORDER = ['walk', 'run', 'zombie', 'jump', 'jacks', 'wave', 'twist', 'spin', 'jelly', 'fall'];
+
+        let gifWorkerUrl = '';
+        fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js')
+            .then(res => res.text())
+            .then(text => {
+                const blob = new Blob([text], {type: 'application/javascript'});
+                gifWorkerUrl = URL.createObjectURL(blob);
+            });
+
+        initTools();
+        initMotionButtons();
+        drawBackgroundMannequin();
+        drawGuides();
+        resetDrawingState();
+
+        function fillRoundRect(c, x, y, w, h, r) {
+            c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.arcTo(x + w, y, x + w, y + r, r);
+            c.lineTo(x + w, y + h - r); c.arcTo(x + w, y + h, x + w - r, y + h, r);
+            c.lineTo(x + r, y + h); c.arcTo(x, y + h, x, y + h - r, r);
+            c.lineTo(x, y + r); c.arcTo(x, y, x + r, y, r); c.closePath(); c.fill();
+        }
+
+        function drawBackgroundMannequin() {
+            bgCtx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            bgCtx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            bgCtx.fillStyle = '#d9c7a6'; 
+
+            bgCtx.beginPath();
+            bgCtx.moveTo(350, 190); bgCtx.lineTo(450, 190);
+            bgCtx.lineTo(450, 350); bgCtx.arcTo(450, 370, 430, 370, 20);
+            bgCtx.lineTo(370, 370); bgCtx.arcTo(350, 370, 350, 350, 20);
+            bgCtx.fill();
+
+            bgCtx.fillRect(385, 175, 30, 18); 
+
+            fillRoundRect(bgCtx, 160, 210, 180, 40, 20); 
+            fillRoundRect(bgCtx, 460, 210, 180, 40, 20); 
+            fillRoundRect(bgCtx, 345, 370, 45, 150, 20); 
+            fillRoundRect(bgCtx, 410, 370, 45, 150, 20); 
+        }
+
+        function drawGuides() {
+            refCtx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            refCtx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            for (let key in REGIONS) {
+                let r = REGIONS[key];
+                refCtx.lineWidth = 3;
+                refCtx.setLineDash([8, 8]);
+                refCtx.strokeStyle = r.color;
+                refCtx.strokeRect(r.x, r.y, r.w, r.h);
+
+                refCtx.setLineDash([]);
+                refCtx.fillStyle = r.color;
+                refCtx.font = 'bold 20px "Comic Sans MS"';
+                refCtx.textAlign = 'left';
+                refCtx.textBaseline = 'top';
+                refCtx.fillText(r.name, r.x + 8, r.y + 8);
+            }
+            refCtx.setLineDash([6, 6]);
+            refCtx.strokeStyle = '#c6a15b';
+            refCtx.lineWidth = 3;
+            refCtx.beginPath();
+            refCtx.arc(HEAD.x + HEAD.w / 2, HEAD.y + HEAD.h / 2, HEAD.w / 2, 0, Math.PI * 2);
+            refCtx.stroke();
+            refCtx.setLineDash([]);
+        }
+
+        function initTools() {
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.onclick = () => { colorInput.value = btn.dataset.color; updateColorPreview(); }
+            });
+            colorInput.oninput = updateColorPreview;
+            document.getElementById('pen').onclick = () => setDrawMode('pen');
+            document.getElementById('eraser').onclick = () => setDrawMode('eraser');
+            document.getElementById('fill').onclick = () => setDrawMode('fill');
+            document.getElementById('undo').onclick = () => { if (historyStep > 0) { historyStep--; restoreState(historyStep); } };
+            btnBackJoints.onclick = backToJoints;
+            document.getElementById('clear').onclick = () => {
+                if (sysMode !== 'draw') return;
+                resetDrawingState();
+                titleText.textContent = '再畫一次身體';
+                descText.textContent = '身體擦掉了。頭的照片還在，多餘的地方可以再用擦膠擦。';
+                if (headImage) stampHeadOntoDrawing(headImage);
+            };
+            document.getElementById('btnNewSheet').onclick = () => startFresh(false);
+            document.getElementById('step-ok').onclick = confirmStep;
+            document.querySelectorAll('[data-item]').forEach((btn) => {
+                btn.onclick = () => chooseItem(btn.dataset.item);
+            });
+            document.getElementById('btnShutter').onclick = takePhoto;
+            document.getElementById('btnUsePhoto').onclick = usePhoto;
+            document.getElementById('btnRetake').onclick = retakePhoto;
+            document.getElementById('photoFile').onchange = (e) => {
+                const file = e.target.files && e.target.files[0];
+                e.target.value = '';
+                if (!file) return;
+                const img = new Image();
+                img.onload = () => showStill(frameFromSource(img, false));
+                img.src = URL.createObjectURL(file);
+            };
+            
+            sizeInput.oninput = () => document.getElementById('sizeVal').textContent = sizeInput.value;
+            scaleSlider.oninput = (e) => {
+                if (selectedPartKey) {
+                    partsData[selectedPartKey].scale = parseFloat(e.target.value);
+                    renderAssembly();
+                }
+            };
+        }
+
+        function updateColorPreview() {
+            const col = colorInput.value;
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.color.toLowerCase() === col.toLowerCase());
+            });
+        }
+
+        function setDrawMode(m) {
+            drawMode = m;
+            document.querySelectorAll('#pen, #eraser, #fill').forEach(b => b.classList.remove('active'));
+            document.getElementById(m).classList.add('active');
+        }
+
+        function resetDrawingState() {
+            applyMainTransform();
+            ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            history = [];
+            historyStep = -1;
+            saveState();
+        }
+        function saveState() {
+            historyStep++;
+            if (historyStep < history.length) history.length = historyStep;
+            const snap = document.createElement('canvas');
+            snap.width = canvas.width;
+            snap.height = canvas.height;
+            snap.getContext('2d').drawImage(canvas, 0, 0);
+            history.push(snap);
+            while (history.length > MAX_HISTORY) {
+                history.shift();
+                historyStep--;
+            }
+        }
+        function queueSaveState() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => { saveTimer = 0; saveState(); }, 0);
+        }
+        function flushSaveState() {
+            if (!saveTimer) return;
+            clearTimeout(saveTimer);
+            saveTimer = 0;
+            saveState();
+        }
+        function restoreState(step) {
+            const snap = history[step];
+            if (!snap) return;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(snap, 0, 0);
+            applyMainTransform();
+        }
+
+        function getPos(e) {
+            const rect = eventLayer.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * LOGICAL_W;
+            const y = ((e.clientY - rect.top) / rect.height) * LOGICAL_H;
+            return {
+                x: Number.isFinite(x) ? x : 0,
+                y: Number.isFinite(y) ? y : 0
+            };
+        }
+
+        // ==================== ★ 升級版油漆桶 (支援容差與透明度判定) ★ ====================
+        function floodFill(startX, startY) {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const px = imgData.data;
+            const w = canvas.width;
+            const h = canvas.height;
+            startX = Math.max(0, Math.min(w - 1, Math.round(startX * bitmapScale)));
+            startY = Math.max(0, Math.min(h - 1, Math.round(startY * bitmapScale)));
+            const startPos = (startY * w + startX) * 4;
+
+            // 取得點擊位置的原本顏色
+            const targetR = px[startPos];
+            const targetG = px[startPos+1];
+            const targetB = px[startPos+2];
+            const targetA = px[startPos+3];
+
+            // 解析使用者目前選擇的油漆桶顏色
+            const hex = colorInput.value;
+            const fillR = parseInt(hex.slice(1,3), 16);
+            const fillG = parseInt(hex.slice(3,5), 16);
+            const fillB = parseInt(hex.slice(5,7), 16);
+            const fillA = 255;
+
+            // 如果點擊處的顏色和要倒下去的顏色一模一樣 (包含透明度也要比對)，就不用浪費時間跑了
+            if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === fillA) return;
+
+            const stack = [startX, startY];
+            const visited = new Uint8Array(w * h);
+
+            // 專業容差值 (Tolerance): 設定為 60，這可以讓油漆完美吃進畫筆的模糊邊緣，消滅白邊！
+            const tolerance = 60; 
+            
+            function colorMatch(pos) {
+                const r = px[pos], g = px[pos+1], b = px[pos+2], a = px[pos+3];
+                // 針對完全透明的畫布特殊處理
+                if (targetA === 0 && a === 0) return true;
+                
+                // 計算色差是否在容差範圍內
+                return Math.abs(r - targetR) <= tolerance &&
+                       Math.abs(g - targetG) <= tolerance &&
+                       Math.abs(b - targetB) <= tolerance &&
+                       Math.abs(a - targetA) <= tolerance;
+            }
+
+            while (stack.length > 0) {
+                const y = stack.pop();
+                const x = stack.pop();
+
+                if (x < 0 || x >= w || y < 0 || y >= h) continue;
+
+                const idx = y * w + x;
+                if (visited[idx]) continue;
+
+                const pos = idx * 4;
+                if (!colorMatch(pos)) continue; // 如果顏色差太多，就停止蔓延
+
+                // 填上新顏色
+                px[pos] = fillR;
+                px[pos+1] = fillG;
+                px[pos+2] = fillB;
+                px[pos+3] = fillA;
+                visited[idx] = 1;
+
+                // 往上下左右四個方向繼續倒色
+                stack.push(x+1, y, x-1, y, x, y+1, x, y-1);
+            }
+            
+            ctx.putImageData(imgData, 0, 0); 
+            saveState();
+        }
+
+        function updateBrushPreview(x, y) {
+            pctx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            pctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            if (sysMode !== 'draw') return;
+            if (drawMode === 'fill') {
+                pctx.strokeStyle = '#000'; pctx.lineWidth = 2; pctx.beginPath();
+                pctx.moveTo(x-18, y); pctx.lineTo(x+18, y); pctx.moveTo(x, y-18); pctx.lineTo(x, y+18); pctx.stroke();
+                pctx.fillStyle = colorInput.value; pctx.beginPath(); pctx.arc(x, y, 7, 0, Math.PI*2); pctx.fill(); pctx.stroke(); return;
+            }
+            const sz = parseInt(sizeInput.value);
+            pctx.lineWidth = 2.5; pctx.strokeStyle = drawMode === 'eraser' ? '#ff4444' : '#333';
+            pctx.setLineDash(drawMode === 'eraser' ? [8,6] : []);
+            pctx.beginPath(); pctx.arc(x, y, sz, 0, Math.PI*2); pctx.stroke();
+            pctx.globalAlpha = 0.2; pctx.fillStyle = drawMode === 'eraser' ? '#ff0000' : colorInput.value; pctx.fill(); pctx.globalAlpha = 1; pctx.setLineDash([]);
+        }
+
+        function startStroke(pos) {
+            flushSaveState();
+            applyMainTransform();
+            isDrawing = true;
+            ctx.lineWidth = parseInt(sizeInput.value, 10);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.globalCompositeOperation = drawMode === 'pen' ? 'source-over' : 'destination-out';
+            ctx.strokeStyle = colorInput.value;
+            ctx.fillStyle = drawMode === 'pen' ? colorInput.value : '#000';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, Math.max(0.5, ctx.lineWidth / 2), 0, Math.PI * 2);
+            ctx.fill();
+            penLast = pos;
+            penMid = pos;
+        }
+
+        function extendStroke(pos) {
+            if (!penLast) return;
+            if (Math.hypot(pos.x - penLast.x, pos.y - penLast.y) < 0.35) return;
+            const mid = { x: (penLast.x + pos.x) / 2, y: (penLast.y + pos.y) / 2 };
+            ctx.beginPath();
+            ctx.moveTo(penMid.x, penMid.y);
+            ctx.quadraticCurveTo(penLast.x, penLast.y, mid.x, mid.y);
+            ctx.stroke();
+            penMid = mid;
+            penLast = pos;
+        }
+
+        function endStroke() {
+            if (!penLast || !penMid) return;
+            ctx.beginPath();
+            ctx.moveTo(penMid.x, penMid.y);
+            ctx.lineTo(penLast.x, penLast.y);
+            ctx.stroke();
+            penLast = null;
+            penMid = null;
+            applyMainTransform();
+        }
+
+        function handlePointerDown(e) {
+            if (!e.isPrimary || activePointerId !== null) return;
+            if (sysMode !== 'draw' && sysMode !== 'assemble') return;
+            if (sysMode === 'draw' && toolsDiv.style.display === 'none') return;
+            if (e.cancelable) e.preventDefault();
+            const pos = getPos(e);
+            activePointerId = e.pointerId;
+            try { eventLayer.setPointerCapture(e.pointerId); } catch (err) {}
+
+            if (sysMode === 'draw') {
+                if (drawMode === 'fill') {
+                    flushSaveState();
+                    floodFill(pos.x, pos.y);
+                    activePointerId = null;
+                    return;
+                }
+                startStroke(pos);
+                return;
+            }
+
+            const keys = Object.keys(partsData).reverse();
+            for (const key of keys) {
+                const p = partsData[key];
+                const pivotAbsX = p.x + p.pivotX * p.scale;
+                const pivotAbsY = p.y + p.pivotY * p.scale;
+                if (Math.hypot(pos.x - pivotAbsX, pos.y - pivotAbsY) < 30) {
+                    draggingPivot = p;
+                    selectPart(key);
+                    eventLayer.style.cursor = 'crosshair';
+                    return;
+                }
+            }
+            for (const key of keys) {
+                const p = partsData[key];
+                const scaledW = p.w * p.scale;
+                const scaledH = p.h * p.scale;
+                if (pos.x >= p.x && pos.x <= p.x + scaledW && pos.y >= p.y && pos.y <= p.y + scaledH) {
+                    draggingPart = p;
+                    dragOffsetX = pos.x - p.x;
+                    dragOffsetY = pos.y - p.y;
+                    selectPart(key);
+                    eventLayer.style.cursor = 'grabbing';
+                    return;
+                }
+            }
+            selectPart(null);
+        }
+
+        function handlePointerMove(e) {
+            if (e.pointerId !== activePointerId && activePointerId !== null) return;
+            if ((isDrawing || draggingPart || draggingPivot) && e.cancelable) e.preventDefault();
+            const events = (e.getCoalescedEvents && isDrawing) ? e.getCoalescedEvents() : [e];
+            let pos = getPos(e);
+            if (sysMode === 'draw') {
+                if (!isDrawing && e.target === eventLayer) {
+                    pos = getPos(e);
+                    if (!previewPending) {
+                        previewPending = true;
+                        const px = pos.x, py = pos.y;
+                        requestAnimationFrame(() => { updateBrushPreview(px, py); previewPending = false; });
+                    }
+                }
+                if (!isDrawing || drawMode === 'fill') return;
+                for (const ev of events) extendStroke(getPos(ev));
+                return;
+            }
+            if (sysMode !== 'assemble') return;
+            pos = getPos(e);
+            if (draggingPivot) {
+                const newPx = (pos.x - draggingPivot.x) / draggingPivot.scale;
+                const newPy = (pos.y - draggingPivot.y) / draggingPivot.scale;
+                draggingPivot.pivotX = Math.max(0, Math.min(newPx, draggingPivot.w));
+                draggingPivot.pivotY = Math.max(0, Math.min(newPy, draggingPivot.h));
+                renderAssembly();
+            } else if (draggingPart) {
+                draggingPart.x = pos.x - dragOffsetX;
+                draggingPart.y = pos.y - dragOffsetY;
+                renderAssembly();
+            }
+        }
+
+        function handlePointerUp(e) {
+            if (activePointerId === null) return;
+            if (e.pointerId !== undefined && e.pointerId !== activePointerId) return;
+            const pointerId = activePointerId;
+            activePointerId = null;
+            if (eventLayer.hasPointerCapture && eventLayer.hasPointerCapture(pointerId)) {
+                try { eventLayer.releasePointerCapture(pointerId); } catch (err) {}
+            }
+            if (isDrawing) {
+                endStroke();
+                isDrawing = false;
+                queueSaveState();
+            }
+            draggingPart = null;
+            draggingPivot = null;
+            if (sysMode === 'assemble') eventLayer.style.cursor = 'grab';
+        }
+
+        eventLayer.addEventListener('pointerdown', handlePointerDown, { passive: false });
+        eventLayer.addEventListener('pointermove', handlePointerMove, { passive: false });
+        eventLayer.addEventListener('pointerup', handlePointerUp);
+        eventLayer.addEventListener('pointercancel', handlePointerUp);
+        eventLayer.addEventListener('lostpointercapture', handlePointerUp);
+        eventLayer.addEventListener('pointerleave', () => {
+            if (!isDrawing) pctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+        });
+
+        function missingPartNames() {
+            const missing = [];
+            for (const key in REGIONS) {
+                if (!autoCropRegion(REGIONS[key].x, REGIONS[key].y, REGIONS[key].w, REGIONS[key].h)) missing.push(REGIONS[key].name);
+            }
+            if (!autoCropRegion(HEAD.x, HEAD.y, HEAD.w, HEAD.h)) missing.unshift('頭');
+            return missing;
+        }
+
+        function requestSlice() {
+            if (!headImage) {
+                titleText.textContent = '還未拍照';
+                descText.textContent = '先拍下你的頭，再畫身體。';
+                return;
+            }
+            const missing = missingPartNames();
+            if (missing.length) {
+                titleText.textContent = '還差一點點';
+                descText.textContent = `這幾個框還是空的：${missing.join('、')}。畫上去再按一次。`;
+                return;
+            }
+            showStep('assemble', () => processAutoSlice());
+        }
+
+        function requestAnimate() {
+            showStep('motion', () => startAnimation());
+        }
+
+        function requestExport() {
+            if (exporting) return;
+            showStep('send', () => exportGIF());
+        }
+
+        function processAutoSlice() {
+            partsData = {};
+            let missingParts = [];
+
+            for (let key in REGIONS) {
+                let r = REGIONS[key];
+                let crop = autoCropRegion(r.x, r.y, r.w, r.h);
+                
+                if (!crop) {
+                    missingParts.push(r.name);
+                    continue;
+                }
+
+                let absPivotX = r.x + r.w * r.px;
+                let absPivotY = r.y + r.h * r.py;
+                let cropPivotX = absPivotX - crop.offsetX;
+                let cropPivotY = absPivotY - crop.offsetY;
+
+                partsData[r.id] = {
+                    img: crop.img, w: crop.w, h: crop.h,
+                    x: crop.offsetX, y: crop.offsetY, 
+                    scale: 1.0, pivotX: cropPivotX, pivotY: cropPivotY
+                };
+            }
+
+            const headCrop = autoCropRegion(HEAD.x, HEAD.y, HEAD.w, HEAD.h);
+            if (!headCrop) missingParts.unshift('頭');
+            if (missingParts.length > 0) {
+                partsData = {};
+                titleText.textContent = '還差一點點';
+                descText.textContent = `這幾個框還是空的：${missingParts.join('、')}。畫上去再按一次。`;
+                return;
+            }
+            partsData.head = {
+                img: headCrop.img, w: headCrop.w, h: headCrop.h,
+                x: headCrop.offsetX, y: headCrop.offsetY, scale: 1,
+                pivotX: HEAD.x + HEAD.w * HEAD.px - headCrop.offsetX,
+                pivotY: HEAD.y + HEAD.h * HEAD.py - headCrop.offsetY
+            };
+
+            sysMode = 'assemble';
+            toolsDiv.style.display = 'none'; 
+            assembleDiv.style.display = 'flex';
+            refCanvas.style.display = 'none'; 
+            bgCanvas.style.display = 'none';
+            headCanvas.style.display = 'none';
+            pctx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            pctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            
+            titleText.innerText = '旅人拼好了';
+            descText.innerHTML = '可以拖拉<b style="color:#7a2e12">紅色靶心</b>調整關節。沒問題就按【選一個動作】。';
+            
+            btnNext.style.display = 'none'; 
+            btnAnimate.style.display = 'block';
+            eventLayer.style.cursor = 'grab';
+            
+            renderAssembly();
+        }
+
+        function autoCropRegion(rx, ry, rw, rh) {
+            const s = bitmapScale;
+            const maxW = canvas.width;
+            const maxH = canvas.height;
+            const bx = Math.max(0, Math.min(maxW - 1, Math.round(rx * s)));
+            const by = Math.max(0, Math.min(maxH - 1, Math.round(ry * s)));
+            const bw = Math.max(1, Math.min(maxW - bx, Math.round(rw * s)));
+            const bh = Math.max(1, Math.min(maxH - by, Math.round(rh * s)));
+            const imgData = ctx.getImageData(bx, by, bw, bh).data;
+            let minX = bw, minY = bh, maxX = -1, maxY = -1;
+
+            for (let y = 0; y < bh; y++) {
+                for (let x = 0; x < bw; x++) {
+                    if (imgData[(y * bw + x) * 4 + 3] > 0) {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+            }
+            if (maxX < 0) return null;
+
+            const pad = Math.round(5 * s);
+            minX = Math.max(0, minX - pad);
+            minY = Math.max(0, minY - pad);
+            maxX = Math.min(bw - 1, maxX + pad);
+            maxY = Math.min(bh - 1, maxY + pad);
+            const cropBw = maxX - minX + 1;
+            const cropBh = maxY - minY + 1;
+
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = cropBw;
+            tmpCanvas.height = cropBh;
+            tmpCanvas.getContext('2d').drawImage(canvas, bx + minX, by + minY, cropBw, cropBh, 0, 0, cropBw, cropBh);
+
+            return {
+                img: tmpCanvas,
+                w: cropBw / s,
+                h: cropBh / s,
+                offsetX: rx + minX / s,
+                offsetY: ry + minY / s
+            };
+        }
+
+        function selectPart(key) {
+            selectedPartKey = key;
+            if (key) {
+                let partName = REGIONS[key].name;
+                selectedPartNameTxt.innerText = partName;
+                scaleSlider.disabled = false; scaleSlider.value = partsData[key].scale;
+            } else {
+                selectedPartNameTxt.innerText = "尚未選取"; scaleSlider.disabled = true; scaleSlider.value = 1;
+            }
+            renderAssembly();
+        }
+
+        function renderAssembly() {
+            if (sysMode !== 'assemble') return;
+            applyMainTransform();
+            ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            const drawOrder = ['rArm', 'rLeg', 'torso', 'head', 'lArm', 'lLeg'];
+            
+            for (let key of drawOrder) {
+                let p = partsData[key];
+                if (p) {
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.scale, p.scale); ctx.drawImage(p.img, 0, 0, p.w, p.h);
+                    if (key === selectedPartKey) {
+                        ctx.strokeStyle = '#2196f3'; ctx.lineWidth = 5 / p.scale; 
+                        ctx.setLineDash([8 / p.scale, 8 / p.scale]); ctx.strokeRect(0, 0, p.w, p.h); ctx.setLineDash([]);
+                    }
+                    ctx.restore();
+                }
+            }
+            
+            for (let key of drawOrder) {
+                let p = partsData[key];
+                if (p) {
+                    const cx = p.x + p.pivotX * p.scale; const cy = p.y + p.pivotY * p.scale;
+                    ctx.fillStyle = '#ff1744'; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.fill(); 
+                    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();  
+                    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.stroke();
+                }
+            }
+        }
+
+        function initMotionButtons() {
+            const list = document.getElementById('motion-list');
+            let lastGroup = '';
+            MOTION_ORDER.forEach((id) => {
+                const motion = MOTIONS[id];
+                if (motion.group !== lastGroup) {
+                    lastGroup = motion.group;
+                    const title = document.createElement('div');
+                    title.className = 'motion-group-title';
+                    title.textContent = motion.group;
+                    const group = document.createElement('div');
+                    group.className = 'motion-group';
+                    group.appendChild(title);
+                    const grid = document.createElement('div');
+                    grid.className = 'motion-grid';
+                    grid.dataset.group = motion.group;
+                    group.appendChild(grid);
+                    list.appendChild(group);
+                }
+                const grid = list.querySelector(`[data-group="${motion.group}"]`);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'tool-btn motion-btn';
+                btn.dataset.motion = id;
+                btn.textContent = motion.name;
+                btn.onclick = () => selectMotion(id);
+                grid.appendChild(btn);
+            });
+        }
+
+        function setMotionButtonsDisabled(disabled) {
+            document.querySelectorAll('.motion-btn').forEach((btn) => { btn.disabled = disabled; });
+            btnBackJoints.disabled = disabled;
+        }
+
+        function highlightMotion() {
+            document.querySelectorAll('.motion-btn').forEach((btn) => {
+                btn.classList.toggle('active', btn.dataset.motion === selectedMotionId);
+            });
+        }
+
+        function refreshExportLabel() {
+            if (btnExportGIF.disabled) return;
+            const name = MOTIONS[selectedMotionId].name;
+            btnExportGIF.textContent = hasSent ? `再送「${name}」` : `送到市集：${name}`;
+        }
+
+        function selectMotion(id) {
+            if (exporting || !MOTIONS[id]) return;
+            selectedMotionId = id;
+            motionStart = Date.now();
+            highlightMotion();
+            refreshExportLabel();
+            if (sysMode === 'animate') {
+                titleText.textContent = `✨ ${MOTIONS[id].name}`;
+                descText.textContent = '換一個動作會立刻預覽。送到大電視的是你現在選的這個。';
+            }
+        }
+
+        function backToJoints() {
+            if (exporting) return;
+            sysMode = 'assemble';
+            if (animationId) cancelAnimationFrame(animationId);
+            motionDiv.style.display = 'none';
+            assembleDiv.style.display = 'flex';
+            btnExportGIF.style.display = 'none';
+            btnAnimate.style.display = 'block';
+            eventLayer.style.cursor = 'grab';
+            titleText.textContent = '🧩 再調一下關節';
+            descText.innerHTML = '拖拉紅色靶心或放大縮小。改好再按【選一個動作】。';
+            renderAssembly();
+        }
+
+        function startAnimation() {
+            sysMode = 'animate';
+            if (animationId) cancelAnimationFrame(animationId);
+            btnAnimate.style.display = 'none';
+            assembleDiv.style.display = 'none';
+            motionDiv.style.display = 'flex';
+            btnExportGIF.style.display = 'block';
+            eventLayer.style.cursor = 'default';
+            pctx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            pctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+
+            const torsoP = partsData.torso;
+            const rootX = torsoP.x + torsoP.pivotX * torsoP.scale;
+            const rootY = torsoP.y + torsoP.pivotY * torsoP.scale;
+            for (const key in partsData) {
+                const p = partsData[key];
+                p.relativeX = (p.x + p.pivotX * p.scale) - rootX;
+                p.relativeY = (p.y + p.pivotY * p.scale) - rootY;
+            }
+            poseRootX = LOGICAL_W * 0.5;
+            poseRootY = LOGICAL_H * 0.58;
+            motionStart = Date.now();
+            highlightMotion();
+            refreshExportLabel();
+            titleText.textContent = `✨ ${MOTIONS[selectedMotionId].name}`;
+            descText.textContent = '點下面的動作，旅人會立刻換。送到電視的是你選的這一個。';
+            animationId = requestAnimationFrame(drawFrameLive);
+        }
+
+        function renderMotionFrame(targetCtx, phase) {
+            const pose = MOTIONS[selectedMotionId].sample(phase);
+            const angles = pose.angles;
+            targetCtx.save();
+            targetCtx.translate(poseRootX + (pose.rootX || 0), poseRootY + (pose.rootY || 0));
+            targetCtx.rotate(pose.rootAngle || 0);
+            targetCtx.scale(pose.squashX ?? 1, pose.squashY ?? 1);
+            targetCtx.translate(-poseRootX, -poseRootY);
+
+            const drawOrder = ['rArm', 'rLeg', 'torso', 'head', 'lArm', 'lLeg'];
+            for (const key of drawOrder) {
+                const p = partsData[key];
+                if (!p) continue;
+                targetCtx.save();
+                targetCtx.translate(poseRootX + p.relativeX, poseRootY + p.relativeY);
+                targetCtx.rotate(angles[key] || 0);
+                targetCtx.scale(p.scale, p.scale);
+                targetCtx.drawImage(p.img, -p.pivotX, -p.pivotY, p.w, p.h);
+                targetCtx.restore();
+            }
+            targetCtx.restore();
+        }
+
+        function drawFrameLive() {
+            if (sysMode !== 'animate') return;
+            const motion = MOTIONS[selectedMotionId];
+            const phase = ((Date.now() - motionStart) / (motion.duration * 1000)) % 1;
+            applyMainTransform();
+            ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            renderMotionFrame(ctx, phase);
+            animationId = requestAnimationFrame(drawFrameLive);
+        }
+
+        function startFresh(sent) {
+            sessionId++;
+            if (animationId) cancelAnimationFrame(animationId);
+            animationId = 0;
+            isDrawing = false;
+            activePointerId = null;
+            draggingPart = null;
+            draggingPivot = null;
+            penLast = null;
+            penMid = null;
+            exporting = false;
+            hasSent = false;
+            selectedMotionId = 'walk';
+            carriedItem = '';
+            partsData = {};
+            selectedPartKey = null;
+            sysMode = 'draw';
+            stopCamera();
+            clearHeadPhoto();
+            closeCameraLayer();
+
+            toolsDiv.style.display = 'none';
+            assembleDiv.style.display = 'none';
+            motionDiv.style.display = 'none';
+            document.getElementById('item-badge').style.display = 'none';
+            document.getElementById('goods-panel').hidden = true;
+            document.getElementById('step-ok').hidden = false;
+            btnNext.style.display = 'none';
+            btnAnimate.style.display = 'none';
+            btnExportGIF.style.display = 'none';
+            btnExportGIF.disabled = false;
+            setMotionButtonsDisabled(false);
+            highlightMotion();
+
+            refCanvas.style.display = '';
+            bgCanvas.style.display = '';
+            headCanvas.style.display = '';
+            eventLayer.style.cursor = 'crosshair';
+            pctx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            pctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+            scaleSlider.disabled = true;
+            scaleSlider.value = 1;
+            selectedPartNameTxt.textContent = '尚未選取';
+            setDrawMode('pen');
+            resetDrawingState();
+            drawGuides();
+            titleText.textContent = sent ? '送到市集了' : '歡迎來到絲綢之路';
+            descText.textContent = '先聽說明，再選一樣要帶去市集的東西。';
+            showStep(sent ? 'introNext' : 'intro', () => showGoodsPicker());
+        }
+
+        function exportGIF() {
+            if (exporting) return;
+            const session = sessionId;
+            exporting = true;
+            setMotionButtonsDisabled(true);
+            btnExportGIF.disabled = true;
+            btnExportGIF.textContent = '⏳ 正在打包準備發送...';
+
+            const scaleFactor = 0.5;
+            const frameDelay = 50;
+            const motion = MOTIONS[selectedMotionId];
+            const framesCount = Math.max(16, Math.round(motion.duration * 1000 / frameDelay));
+            const offScreenCanvas = document.createElement('canvas');
+            offScreenCanvas.width = Math.round(LOGICAL_W * scaleFactor);
+            offScreenCanvas.height = Math.round(LOGICAL_H * scaleFactor);
+            const offScreenCtx = offScreenCanvas.getContext('2d', { willReadFrequently: true });
+
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: offScreenCanvas.width,
+                height: offScreenCanvas.height,
+                transparent: 0x00FF00,
+                workerScript: gifWorkerUrl || 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+            });
+
+            for (let i = 0; i < framesCount; i++) {
+                const phase = i / framesCount;
+                offScreenCtx.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0);
+                offScreenCtx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+                renderMotionFrame(offScreenCtx, phase);
+
+                const imgData = offScreenCtx.getImageData(0, 0, offScreenCanvas.width, offScreenCanvas.height);
+                const data = imgData.data;
+                for (let j = 0; j < data.length; j += 4) {
+                    if (data[j + 3] < 128) {
+                        data[j] = 0; data[j + 1] = 255; data[j + 2] = 0; data[j + 3] = 255;
+                    } else {
+                        data[j + 3] = 255;
+                        if (data[j] === 0 && data[j + 1] === 255 && data[j + 2] === 0) data[j + 1] = 254;
+                    }
+                }
+                gif.addFrame(imgData, { delay: frameDelay });
+            }
+
+            gif.on('finished', function(blob) {
+                if (session !== sessionId) return;
+                btnExportGIF.textContent = '🚀 正在飛往大螢幕...';
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = function() {
+                    if (session !== sessionId) return;
+                    const goods = GOODS[carriedItem] || GOODS.silk;
+                    db.ref('characters').push({
+                        data: reader.result,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        item: carriedItem,
+                        itemName: goods.name,
+                        direction: goods.direction
+                    }).then(() => {
+                        if (session !== sessionId) return;
+                        startFresh(true);
+                    }).catch(() => {
+                        if (session !== sessionId) return;
+                        exporting = false;
+                        btnExportGIF.disabled = false;
+                        setMotionButtonsDisabled(false);
+                        btnExportGIF.textContent = '❌ 發送失敗，再試一次';
+                        titleText.textContent = '發送失敗';
+                        descText.textContent = '請檢查網路，再按一次紫色按鈕。';
+                    });
+                };
+            });
+            gif.render();
+        }
+
+        document.addEventListener('keydown', e => {
+            if (sysMode !== 'draw') return;
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); document.getElementById('undo').click(); }
+        });
+
+        function showStep(id, action) {
+            const copy = STEP_COPY[id];
+            document.getElementById('goods-panel').hidden = true;
+            document.getElementById('step-ok').hidden = false;
+            document.getElementById('step-kicker').textContent = copy.kicker;
+            document.getElementById('step-title').textContent = copy.title;
+            document.getElementById('step-body').textContent = copy.body;
+            document.getElementById('step-ok').textContent = copy.ok;
+            stepAction = action;
+            document.getElementById('step-modal').hidden = false;
+        }
+
+        function showGoodsPicker() {
+            document.getElementById('step-kicker').textContent = '選擇貨物';
+            document.getElementById('step-title').textContent = '你要帶去市集的是？';
+            document.getElementById('step-body').textContent = '點一幅圖。絲綢和紙從東方出發，香料和玻璃從西方出發。';
+            document.getElementById('step-ok').hidden = true;
+            document.getElementById('goods-panel').hidden = false;
+            stepAction = null;
+            document.getElementById('step-modal').hidden = false;
+        }
+
+        function confirmStep() {
+            const action = stepAction;
+            stepAction = null;
+            document.getElementById('step-modal').hidden = true;
+            if (action) action();
+        }
+
+        function chooseItem(id) {
+            if (!GOODS[id]) return;
+            carriedItem = id;
+            const goods = GOODS[id];
+            const badge = document.getElementById('item-badge');
+            badge.style.display = 'block';
+            badge.textContent = `你帶著${goods.name}，來自${goods.from}`;
+            showStep('photo', () => openCamera());
+        }
+
+        function enableDrawing() {
+            toolsDiv.style.display = 'flex';
+            btnNext.style.display = '';
+            sysMode = 'draw';
+            const goods = GOODS[carriedItem];
+            titleText.textContent = goods ? `畫這位帶${goods.name}的旅人` : '畫身體';
+            descText.textContent = '頭是金色圓框裡的照片。多餘的地方用擦膠擦掉，再畫身體、雙手和雙腳。';
+        }
+
+        async function openCamera() {
+            const layer = document.getElementById('camera-layer');
+            const video = document.getElementById('camera-video');
+            const hint = document.getElementById('camera-hint');
+            layer.hidden = false;
+            resetCameraButtons();
+            hint.textContent = '把臉放進金色圓框';
+            try {
+                stopCamera();
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } }
+                });
+                video.srcObject = cameraStream;
+                video.hidden = false;
+                await video.play();
+            } catch (err) {
+                hint.textContent = '未能直接打開鏡頭。請再按拍照，改用 iPad 相機。';
+            }
+        }
+
+        function stopCamera() {
+            if (!cameraStream) return;
+            cameraStream.getTracks().forEach((track) => track.stop());
+            cameraStream = null;
+            const video = document.getElementById('camera-video');
+            video.srcObject = null;
+        }
+
+        function closeCameraLayer() {
+            document.getElementById('camera-layer').hidden = true;
+            document.getElementById('camera-still').hidden = true;
+            document.getElementById('camera-video').hidden = false;
+            pendingHead = null;
+        }
+
+        function resetCameraButtons() {
+            document.getElementById('btnShutter').hidden = false;
+            document.getElementById('btnUsePhoto').hidden = true;
+            document.getElementById('btnRetake').hidden = true;
+            document.getElementById('camera-still').hidden = true;
+            document.getElementById('camera-video').hidden = false;
+        }
+
+        function takePhoto() {
+            const video = document.getElementById('camera-video');
+            if (cameraStream && video.videoWidth) {
+                showStill(frameFromSource(video, true));
+                return;
+            }
+            document.getElementById('photoFile').click();
+        }
+
+        function frameFromSource(source, mirror) {
+            const sw = source.videoWidth || source.naturalWidth || source.width;
+            const sh = source.videoHeight || source.naturalHeight || source.height;
+            const shot = document.createElement('canvas');
+            shot.width = Math.max(1, sw);
+            shot.height = Math.max(1, sh);
+            const sctx = shot.getContext('2d');
+            if (mirror) {
+                sctx.translate(shot.width, 0);
+                sctx.scale(-1, 1);
+            }
+            sctx.drawImage(source, 0, 0, sw, sh);
+            return shot;
+        }
+
+        function cropInsideGoldFrame(sourceCanvas) {
+            const layer = document.getElementById('camera-layer').getBoundingClientRect();
+            const still = document.getElementById('camera-still').getBoundingClientRect();
+            const diameter = layer.width * 0.46;
+            const cx = layer.left + layer.width / 2;
+            const cy = layer.top + layer.height * 0.38;
+            const localX = cx - diameter / 2 - still.left;
+            const localY = cy - diameter / 2 - still.top;
+            const elemW = still.width || layer.width;
+            const elemH = still.height || layer.height;
+            const mediaW = sourceCanvas.width;
+            const mediaH = sourceCanvas.height;
+            const scale = Math.max(elemW / mediaW, elemH / mediaH);
+            const offsetX = (mediaW * scale - elemW) / 2;
+            const offsetY = (mediaH * scale - elemH) / 2;
+            let sx = (localX + offsetX) / scale;
+            let sy = (localY + offsetY) / scale;
+            let sw = diameter / scale;
+            let sh = diameter / scale;
+            if (sx < 0) { sw += sx; sx = 0; }
+            if (sy < 0) { sh += sy; sy = 0; }
+            sw = Math.max(1, Math.min(sw, mediaW - sx));
+            sh = Math.max(1, Math.min(sh, mediaH - sy));
+            const size = 480;
+            const shot = document.createElement('canvas');
+            shot.width = size;
+            shot.height = size;
+            const sctx = shot.getContext('2d');
+            sctx.beginPath();
+            sctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            sctx.clip();
+            sctx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, size, size);
+            return shot;
+        }
+
+        function showStill(shot) {
+            pendingHead = shot;
+            const still = document.getElementById('camera-still');
+            still.width = shot.width;
+            still.height = shot.height;
+            still.getContext('2d').drawImage(shot, 0, 0);
+            still.hidden = false;
+            document.getElementById('camera-video').hidden = true;
+            document.getElementById('btnShutter').hidden = true;
+            document.getElementById('btnUsePhoto').hidden = false;
+            document.getElementById('btnRetake').hidden = false;
+            document.getElementById('camera-hint').textContent = '金色圓框裡的畫面會變成頭';
+        }
+
+        function retakePhoto() {
+            pendingHead = null;
+            resetCameraButtons();
+            document.getElementById('camera-hint').textContent = cameraStream ? '把臉放進金色圓框' : '請再按拍照';
+            if (!cameraStream) document.getElementById('photoFile').click();
+        }
+
+        function usePhoto() {
+            if (!pendingHead) return;
+            headImage = cropInsideGoldFrame(pendingHead);
+            pendingHead = null;
+            stampHeadOntoDrawing(headImage);
+            stopCamera();
+            closeCameraLayer();
+            showStep('draw', () => enableDrawing());
+        }
+
+        function stampHeadOntoDrawing(img) {
+            applyMainTransform();
+            ctx.clearRect(HEAD.x, HEAD.y, HEAD.w, HEAD.h);
+            const cx = HEAD.x + HEAD.w / 2;
+            const cy = HEAD.y + HEAD.h / 2;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, HEAD.w / 2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(img, HEAD.x, HEAD.y, HEAD.w, HEAD.h);
+            ctx.restore();
+            history = [];
+            historyStep = -1;
+            saveState();
+        }
+
+        function clearHeadPhoto() {
+            headImage = null;
+            pendingHead = null;
+            headCtx.setTransform(bitmapScale, 0, 0, bitmapScale, 0, 0);
+            headCtx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+        }
+
+        document.querySelector('.left-panel').addEventListener('touchmove', (e) => {
+            if (e.target.closest('input[type="range"]')) return;
+            const panel = e.currentTarget;
+            if (panel.scrollHeight > panel.clientHeight + 1) return;
+            if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+
+        showStep('intro', () => showGoodsPicker());
+    </script>
+</body>
+</html>
